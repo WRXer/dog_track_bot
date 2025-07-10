@@ -1,14 +1,23 @@
 import asyncio, telebot
-import os
+import os, re
 from telebot.async_telebot import AsyncTeleBot
 from dotenv import load_dotenv
-
+from telebot import types
 
 load_dotenv()
 
 TOKEN_BOT = os.getenv('TOKEN_BOT')
 bot = AsyncTeleBot(TOKEN_BOT)
-user_data = {}
+
+
+user_steps = {}   #user_id: step    #FSM-словари
+user_data = {}    #user_id: {данные}
+
+
+STEPS = [
+    'fio', 'phone'
+]    #Шаги
+
 
 @bot.message_handler(commands=['start', 'help'])
 async def start_handler(message):
@@ -19,10 +28,42 @@ async def start_handler(message):
 @bot.message_handler(commands=['report'])
 async def report_handler(message):
     """Обработка команды report"""
-    user_data[message.chat.id] = {}
-    await bot.send_message(message.chat.id, "📝 Введите ваше ФИО (полностью):")
+    user_id = message.chat.id
+    user_steps[user_id] = 'fio'
+    user_data[user_id] = {}
+    await bot.send_message(user_id, "📝 Введите ваше ФИО полностью:")
 
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'fio')
+async def handle_fio(message):
+    """Получение ФИО"""
+    if len(message.text.split()) < 2:
+        await bot.send_message(message.chat.id, "❌ Укажите ФИО полностью.")
+        return
+    user_data[message.chat.id]['fio'] = message.text
+    user_steps[message.chat.id] = 'phone'
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(types.KeyboardButton("Отправить мой номер", request_contact=True))
+    await bot.send_message(message.chat.id, "📱 Отправьте номер телефона или нажмите кнопку:", reply_markup=keyboard)
 
+@bot.message_handler(content_types=['contact'])
+async def handle_contact(message):
+    """Телефон — автоматическая отправка своего контакта"""
+    if user_steps.get(message.chat.id) != 'phone':
+        return
+    user_data[message.chat.id]['phone'] = message.contact.phone_number
+    user_steps[message.chat.id] = 'address'
+    await bot.send_message(message.chat.id, "🏠 Укажите адрес:", reply_markup=types.ReplyKeyboardRemove())
+
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'phone')
+async def handle_phone(message):
+    """Телефон — вручную"""
+    phone = message.text.strip()
+    if not re.match(r'^\+?\d{10,15}$', phone):
+        await bot.send_message(message.chat.id, "❌ Неверный формат телефона.")
+        return
+    user_data[message.chat.id]['phone'] = phone
+    user_steps[message.chat.id] = 'address'
+    await bot.send_message(message.chat.id, "🏠 Укажите адрес:", reply_markup=types.ReplyKeyboardRemove())
 
 
 if __name__ == "__main__":
