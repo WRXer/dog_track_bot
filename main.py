@@ -1,5 +1,6 @@
 import asyncio, telebot
 import os, re
+from datetime import datetime
 from telebot.async_telebot import AsyncTeleBot
 from dotenv import load_dotenv
 from telebot import types
@@ -98,9 +99,20 @@ async def handle_photo(message):
 async def skip_photo(message):
     """Пропуск фото"""
     user_data[message.chat.id]['photo'] = None
+    user_steps[message.chat.id] = 'description'
+    await bot.send_message(message.chat.id, "✍️ Оставьте комментарий:")
 
-
-
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'description')
+async def handle_description(message):
+    """Описание и принятие заявки"""
+    chat_id = message.chat.id
+    user_data[chat_id]['description'] = message.text
+    await bot.send_message(chat_id,
+                           f"✅ Заявка принята!\n\n"
+                           f"📌 Адрес: {user_data[chat_id]['address']}\n"
+                           f"🔢 Кол-во животных: {user_data[chat_id]['animal_count']}\n"
+                           f"📅 Дата: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\n"
+                           "Спасибо за оставленное обращение! Информация будет передана сотрудникам!")
 
 
 if __name__ == "__main__":
