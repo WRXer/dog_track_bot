@@ -15,7 +15,7 @@ user_data = {}    #user_id: {данные}
 
 
 STEPS = [
-    'fio', 'phone', 'address', 'animal_count', 'location'
+    'fio', 'phone', 'address', 'animal_count', 'photo'
 ]    #Шаги
 
 
@@ -82,20 +82,22 @@ async def handle_count(message):
         await bot.send_message(message.chat.id, "❌ Введите число.")
         return
     user_data[message.chat.id]['animal_count'] = int(message.text)
-    user_steps[message.chat.id] = 'location'
+    user_steps[message.chat.id] = 'photo'
+    await bot.send_message(message.chat.id,
+                           "📷 Прикрепите фото животного (или отправьте 'пропустить'):",
+                           reply_markup=types.ReplyKeyboardRemove())
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(types.KeyboardButton("Отправить местоположение", request_location=True))
-    await bot.send_message(message.chat.id, "📍 Отправьте местоположение животного:", reply_markup=keyboard)
-
-@bot.message_handler(content_types=['location'])
-async def handle_location(message):
-    """Местоположение"""
-    if user_steps.get(message.chat.id) != 'location':
+@bot.message_handler(content_types=['photo'])
+async def handle_photo(message):
+    """Фото"""
+    if user_steps.get(message.chat.id) != 'photo':
         return
-    user_data[message.chat.id]['location'] = message.location
+    user_data[message.chat.id]['photo'] = message.photo[-1].file_id
 
-
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'photo' and m.text.lower() == 'пропустить')
+async def skip_photo(message):
+    """Пропуск фото"""
+    user_data[message.chat.id]['photo'] = None
 
 
 
