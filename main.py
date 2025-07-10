@@ -15,7 +15,7 @@ user_data = {}    #user_id: {данные}
 
 
 STEPS = [
-    'fio', 'phone', 'address', 'animal_count'
+    'fio', 'phone', 'address', 'animal_count', 'location'
 ]    #Шаги
 
 
@@ -82,9 +82,18 @@ async def handle_count(message):
         await bot.send_message(message.chat.id, "❌ Введите число.")
         return
     user_data[message.chat.id]['animal_count'] = int(message.text)
+    user_steps[message.chat.id] = 'location'
 
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(types.KeyboardButton("Отправить местоположение", request_location=True))
+    await bot.send_message(message.chat.id, "📍 Отправьте местоположение животного:", reply_markup=keyboard)
 
-
+@bot.message_handler(content_types=['location'])
+async def handle_location(message):
+    """Местоположение"""
+    if user_steps.get(message.chat.id) != 'location':
+        return
+    user_data[message.chat.id]['location'] = message.location
 
 
 
