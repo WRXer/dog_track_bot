@@ -15,7 +15,7 @@ user_data = {}    #user_id: {данные}
 
 
 STEPS = [
-    'fio', 'phone'
+    'fio', 'phone', 'address', 'animal_count'
 ]    #Шаги
 
 
@@ -63,7 +63,33 @@ async def handle_phone(message):
         return
     user_data[message.chat.id]['phone'] = phone
     user_steps[message.chat.id] = 'address'
-    await bot.send_message(message.chat.id, "🏠 Укажите адрес:", reply_markup=types.ReplyKeyboardRemove())
+    await bot.send_message(message.chat.id, "🏠 Укажите адрес(населенный пункт, улица, дом):", reply_markup=types.ReplyKeyboardRemove())
+
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'address')
+async def handle_address(message):
+    """Адрес"""
+    if len(message.text) < 5:
+        await bot.send_message(message.chat.id, "❌ Адрес слишком короткий.")
+        return
+    user_data[message.chat.id]['address'] = message.text
+    user_steps[message.chat.id] = 'animal_count'
+    await bot.send_message(message.chat.id, "🔢 Укажите количество животных:")
+
+@bot.message_handler(func=lambda m: user_steps.get(m.chat.id) == 'animal_count')
+async def handle_count(message):
+    """Обработка количества животных"""
+    if not message.text.isdigit():
+        await bot.send_message(message.chat.id, "❌ Введите число.")
+        return
+    user_data[message.chat.id]['animal_count'] = int(message.text)
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
