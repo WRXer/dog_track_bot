@@ -22,6 +22,6 @@ def save_to_google_sheet(data):
         data['address'],
         data['animal_count'],
         data['description'],
-        data.get('photo', '')
+        data.get('photo_url', '')
     ]
     sheet.append_row(row)
