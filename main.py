@@ -5,6 +5,8 @@ from telebot.async_telebot import AsyncTeleBot
 from dotenv import load_dotenv
 from telebot import types
 
+from ggl_api import save_to_google_sheet
+
 load_dotenv()
 
 TOKEN_BOT = os.getenv('TOKEN_BOT')
@@ -107,12 +109,15 @@ async def handle_description(message):
     """Описание и принятие заявки"""
     chat_id = message.chat.id
     user_data[chat_id]['description'] = message.text
+    save_to_google_sheet(user_data[chat_id])
     await bot.send_message(chat_id,
                            f"✅ Заявка принята!\n\n"
                            f"📌 Адрес: {user_data[chat_id]['address']}\n"
                            f"🔢 Кол-во животных: {user_data[chat_id]['animal_count']}\n"
                            f"📅 Дата: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\n"
                            "Спасибо за оставленное обращение! Информация будет передана сотрудникам!")
+    del user_steps[chat_id]
+    del user_data[chat_id]
 
 
 if __name__ == "__main__":
