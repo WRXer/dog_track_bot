@@ -9,6 +9,7 @@ from ggl_api import save_to_google_sheet    #Функция сохранения
 
 load_dotenv()
 
+MODERATION_CHAT_ID = os.getenv('MODERATION_CHAT_ID')    #сюда бот будет дублировать все заявки
 TOKEN_BOT = os.getenv('TOKEN_BOT')
 bot = AsyncTeleBot(TOKEN_BOT)
 
@@ -143,6 +144,16 @@ async def handle_description(message):
             types.InlineKeyboardButton("🆕 Создать новую заявку", callback_data="new_report")
         )
     )
+    msg = (
+        f"📥 *Новая заявка*\n\n"
+        f"👤 ФИО: {user_data[chat_id]['fio']}\n"
+        f"📞 Телефон: {user_data[chat_id]['phone']}\n"
+        f"📌 Адрес: {user_data[chat_id]['address']}\n"
+        f"🔢 Кол-во животных: {user_data[chat_id]['animal_count']}\n"
+        f"💬 Комментарий: {user_data[chat_id]['description']}\n"
+        f"📅 Дата: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+    )    #Отправка в модераторский чат
+    await bot.send_message(MODERATION_CHAT_ID, msg, parse_mode='Markdown')
     del user_steps[chat_id]    #Очистка данных
     del user_data[chat_id]
 
